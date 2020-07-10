@@ -13,12 +13,13 @@ class TikTokApi:
     #
     # The TikTokapi class constructor
     #
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, proxy=None):
         self.debug = debug
         if debug:
             print("Class initialized")
 
         self.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.0 Safari/537.36)"
+        self.browser = browser("", language="TR", proxy=proxy, single_instance=True)
         # self.referrer = "https://www.tiktok.com/@ondymikula/video/6757762109670477061"
 
     #
@@ -86,8 +87,13 @@ class TikTokApi:
                 realCount = maxCount
             api_url = "https://m.tiktok.com/api/item_list/?count={}&id=1&type=5&secUid=&maxCursor={}&minCursor=0&sourceType=12&appId=1233&region={}&language={}&verifyFp=".format(
                 str(realCount), str(maxCursor), str(region), str(language))
-            b = browser(api_url, language=language, proxy=proxy)
-            res = self.getData(api_url, b, proxy=proxy)
+            self.browser.url = api_url
+            self.browser.language = language
+            self.browser.proxy = proxy
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(self.browser.single_instance())
+            # b = self.browser(api_url, language=language, proxy=proxy)
+            res = self.getData(api_url, self.browser, proxy=proxy)
 
             if 'items' in res.keys():
                 for t in res['items']:

@@ -10,12 +10,14 @@ from .stealth import stealth
 
 
 class browser:
-    def __init__(self, url, language='en', proxy=None, find_redirect=False, api_url=None):
+    def __init__(self, url, language='en', proxy=None, find_redirect=False, single_instance=False, api_url=None):
         self.url = url
         self.proxy = proxy
         self.api_url = api_url
         self.referrer = "https://www.tiktok.com/"
         self.language = language
+        self.browser = None
+        self.page = None
 
         self.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.0 Safari/537.36)"
         self.args = [
@@ -51,6 +53,9 @@ class browser:
 
         if find_redirect:
             loop.run_until_complete(self.find_redirect())
+        elif single_instance:
+            loop.run_until_complete(self.single_instance())
+            loop.run_forever()
         else:
             loop.run_until_complete(self.start())
 
@@ -111,6 +116,48 @@ class browser:
             await self.browser.close()
         except:
             await self.browser.close()
+
+    async def single_instance(self):
+        try:
+            if self.browser is None:
+                self.browser = await pyppeteer.launch(self.options)
+                self.page = await self.browser.newPage()
+
+                await self.page.evaluateOnNewDocument("""() => {
+            delete navigator.__proto__.webdriver;
+                }""")
+
+                # Check for user:pass proxy
+                if self.proxy != None:
+                    if "@" in self.proxy:
+                        await self.page.authenticate({
+                            'username': self.proxy.split("://")[1].split(":")[0],
+                            'password': self.proxy.split("://")[1].split(":")[1].split("@")[0]
+                        })
+
+                await stealth(self.page)
+
+            await self.page.goto("https://www.tiktok.com/@floofybastard?lang=" + self.language, {
+                'waitUntil': "load"
+            })
+            self.userAgent = await self.page.evaluate("""() => {return navigator.userAgent; }""")
+
+            for c in await self.page.cookies():
+                if c['name'] == "s_v_web_id":
+                    self.verifyFp = c['value']
+
+            if self.verifyFp == None:
+                self.verifyFp = ""
+
+            if self.url:
+                self.signature = await self.page.evaluate('''() => {
+                var url = "''' + self.url + "&verifyFp=" + self.verifyFp + '''"
+                var token = window.byted_acrawler.sign({url: url});
+                return token;
+                }''')
+        except:
+            print("exception @single_instance")
+
 
     async def find_redirect(self):
         try:
