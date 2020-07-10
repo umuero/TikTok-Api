@@ -87,11 +87,7 @@ class TikTokApi:
                 realCount = maxCount
             api_url = "https://m.tiktok.com/api/item_list/?count={}&id=1&type=5&secUid=&maxCursor={}&minCursor=0&sourceType=12&appId=1233&region={}&language={}&verifyFp=".format(
                 str(realCount), str(maxCursor), str(region), str(language))
-            self.browser.url = api_url
-            self.browser.language = language
-            self.browser.proxy = proxy
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(self.browser.single_instance())
+            self.browser.call(api_url, language=language, proxy=proxy)
             # b = self.browser(api_url, language=language, proxy=proxy)
             res = self.getData(api_url, self.browser, proxy=proxy)
 

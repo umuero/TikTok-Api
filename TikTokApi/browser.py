@@ -16,6 +16,8 @@ class browser:
         self.api_url = api_url
         self.referrer = "https://www.tiktok.com/"
         self.language = language
+
+        self.single_instance = single_instance
         self.browser = None
         self.page = None
 
@@ -53,30 +55,35 @@ class browser:
 
         if find_redirect:
             loop.run_until_complete(self.find_redirect())
-        elif single_instance:
-            loop.run_until_complete(self.single_instance())
-            loop.run_forever()
         else:
             loop.run_until_complete(self.start())
 
+    def call(self, url, language='en', proxy=None):
+        self.url = url
+        self.language = language
+        self.proxy = proxy
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(self.start())
+
     async def start(self):
         try:
-            self.browser = await pyppeteer.launch(self.options)
-            self.page = await self.browser.newPage()
+            if self.browser is None:
+                self.browser = await pyppeteer.launch(self.options)
+                self.page = await self.browser.newPage()
 
-            await self.page.evaluateOnNewDocument("""() => {
-        delete navigator.__proto__.webdriver;
-            }""")
+                await self.page.evaluateOnNewDocument("""() => {
+            delete navigator.__proto__.webdriver;
+                }""")
 
-            # Check for user:pass proxy
-            if self.proxy != None:
-                if "@" in self.proxy:
-                    await self.page.authenticate({
-                        'username': self.proxy.split("://")[1].split(":")[0],
-                        'password': self.proxy.split("://")[1].split(":")[1].split("@")[0]
-                    })
+                # Check for user:pass proxy
+                if self.proxy != None:
+                    if "@" in self.proxy:
+                        await self.page.authenticate({
+                            'username': self.proxy.split("://")[1].split(":")[0],
+                            'password': self.proxy.split("://")[1].split(":")[1].split("@")[0]
+                        })
 
-            await stealth(self.page)
+                await stealth(self.page)
 
             # await self.page.emulate({
             #    'viewport': {'width': random.randint(320, 1920), 'height': random.randint(320, 1920), },
@@ -113,51 +120,11 @@ class browser:
                 print(self.data)
                 #self.data = await json.loads(self.data)
 
-            await self.browser.close()
+            if self.single_instance is False:
+                await self.browser.close()
         except:
-            await self.browser.close()
-
-    async def single_instance(self):
-        try:
-            if self.browser is None:
-                self.browser = await pyppeteer.launch(self.options)
-                self.page = await self.browser.newPage()
-
-                await self.page.evaluateOnNewDocument("""() => {
-            delete navigator.__proto__.webdriver;
-                }""")
-
-                # Check for user:pass proxy
-                if self.proxy != None:
-                    if "@" in self.proxy:
-                        await self.page.authenticate({
-                            'username': self.proxy.split("://")[1].split(":")[0],
-                            'password': self.proxy.split("://")[1].split(":")[1].split("@")[0]
-                        })
-
-                await stealth(self.page)
-
-            await self.page.goto("https://www.tiktok.com/@floofybastard?lang=" + self.language, {
-                'waitUntil': "load"
-            })
-            self.userAgent = await self.page.evaluate("""() => {return navigator.userAgent; }""")
-
-            for c in await self.page.cookies():
-                if c['name'] == "s_v_web_id":
-                    self.verifyFp = c['value']
-
-            if self.verifyFp == None:
-                self.verifyFp = ""
-
-            if self.url:
-                self.signature = await self.page.evaluate('''() => {
-                var url = "''' + self.url + "&verifyFp=" + self.verifyFp + '''"
-                var token = window.byted_acrawler.sign({url: url});
-                return token;
-                }''')
-        except:
-            print("exception @single_instance")
-
+            if self.single_instance is False:
+                await self.browser.close()
 
     async def find_redirect(self):
         try:
