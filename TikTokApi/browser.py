@@ -51,19 +51,18 @@ class browser:
             'handleSIGHUP': False
         }
 
-        loop = asyncio.new_event_loop()
+        self.loop = asyncio.new_event_loop()
 
         if find_redirect:
-            loop.run_until_complete(self.find_redirect())
+            self.loop.run_until_complete(self.find_redirect())
         else:
-            loop.run_until_complete(self.start())
+            self.loop.run_until_complete(self.start())
 
     def call(self, url, language='en', proxy=None):
         self.url = url
         self.language = language
         self.proxy = proxy
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(self.start())
+        self.loop.run_until_complete(self.start())
 
     async def start(self):
         try:

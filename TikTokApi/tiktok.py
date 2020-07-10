@@ -19,7 +19,7 @@ class TikTokApi:
             print("Class initialized")
 
         self.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.0 Safari/537.36)"
-        self.browser = browser("", language="TR", proxy=proxy, single_instance=True)
+        self.browser = browser("", language="tr", proxy=proxy, single_instance=True)
         # self.referrer = "https://www.tiktok.com/@ondymikula/video/6757762109670477061"
 
     #
@@ -85,7 +85,7 @@ class TikTokApi:
                 realCount = count
             else:
                 realCount = maxCount
-            api_url = "https://m.tiktok.com/api/item_list/?count={}&id=1&type=5&secUid=&maxCursor={}&minCursor=0&sourceType=12&appId=1233&region={}&language={}&verifyFp=".format(
+            api_url = "https://m.tiktok.com/api/item_list/?count={}&id=1&type=5&secUid=&maxCursor={}&minCursor=0&sourceType=12&appId=1233&region={}&language={}".format(
                 str(realCount), str(maxCursor), str(region), str(language))
             self.browser.call(api_url, language=language, proxy=proxy)
             # b = self.browser(api_url, language=language, proxy=proxy)
