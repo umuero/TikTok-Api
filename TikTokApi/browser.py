@@ -3,15 +3,17 @@ import pyppeteer
 import random
 import time
 import json
+import string
 import atexit
+import requests
 
 # Import Detection From Stealth
 from .stealth import stealth
 
-
 class browser:
-    def __init__(self, url, language='en', proxy=None, find_redirect=False, single_instance=False, api_url=None):
+    def __init__(self, url, language='en', proxy=None, find_redirect=False, single_instance=False, api_url=None, debug=False):
         self.url = url
+        self.debug = debug
         self.proxy = proxy
         self.api_url = api_url
         self.referrer = "https://www.tiktok.com/"
@@ -86,24 +88,38 @@ class browser:
 
                 await stealth(self.page)
 
-            # await self.page.emulate({
-            #    'viewport': {'width': random.randint(320, 1920), 'height': random.randint(320, 1920), },
-            #    'deviceScaleFactor': random.randint(1, 3),
-            #    'isMobile': random.random() > 0.5,
-            #    'hasTouch': random.random() > 0.5
-            # })
-            await self.page.goto("https://www.tiktok.com/@floofybastard?lang=" + self.language, {
-                'waitUntil': "load"
-            })
-            self.userAgent = await self.page.evaluate("""() => {return navigator.userAgent; }""")
+                # await self.page.emulate({
+                #    'viewport': {'width': random.randint(320, 1920), 'height': random.randint(320, 1920), },
+                #    'deviceScaleFactor': random.randint(1, 3),
+                #    'isMobile': random.random() > 0.5,
+                #    'hasTouch': random.random() > 0.5
+                # })
 
-            for c in await self.page.cookies():
-                if c['name'] == "s_v_web_id":
-                    self.verifyFp = c['value']
+                # might have to switch to a tiktok url if they improve security
+                await self.page.goto("https://www.bing.com/")
 
-            if self.verifyFp == None:
-                self.verifyFp = ""
+                self.userAgent = await self.page.evaluate("""() => {return navigator.userAgent; }""")
 
+            self.verifyFp = None
+
+            #
+            # Probably need to unmark this at a later point
+            #
+            #for c in await self.page.cookies():
+            #    if c['name'] == "s_v_web_id":
+            #        self.verifyFp = c['value']
+
+            if self.verifyFp is None:
+                if self.debug:
+                    print("No verifyFp cookie.")
+        
+                key = ''
+                for i in range(16):
+                    key += random.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits)
+                self.verifyFp = key
+
+            await self.page.evaluate("() => { " + self.__get_js(proxy=self.proxy) + " }")
+            
             self.signature = await self.page.evaluate('''() => {
             var url = "''' + self.url + "&verifyFp=" + self.verifyFp + '''"
             var token = window.byted_acrawler.sign({url: url});
@@ -166,3 +182,15 @@ class browser:
 
         except:
             await self.browser.close()
+
+    def __format_proxy(self, proxy):
+        if proxy != None:
+            return {
+                'http': proxy,
+                'https': proxy
+            }
+        else:
+            return None
+
+    def __get_js(self, proxy=None):
+        return requests.get("https://sf16-muse-va.ibytedtos.com/obj/rc-web-sdk-gcs/acrawler.js", proxies=self.__format_proxy(proxy)).text
