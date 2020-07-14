@@ -59,10 +59,12 @@ class browser:
             self.loop.run_until_complete(self.start())
 
     def call(self, url, language='en', proxy=None):
+        print("browser.call %s" % url)
         self.url = url
         self.language = language
         self.proxy = proxy
         self.loop.run_until_complete(self.start())
+        print("browser.call finished")
 
     async def start(self):
         try:

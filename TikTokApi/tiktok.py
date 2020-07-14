@@ -115,7 +115,7 @@ class TikTokApi:
     # Gets a specific user's tiktoks
     #
 
-    def userPosts(self, userID, secUID, count=30, language='en', region='US', proxy=None):
+    def userPosts(self, userID, secUID, count=30, language='en', region='US', proxy=None, userObj=None):
         response = []
         maxCount = 99
         maxCursor = 0
@@ -134,6 +134,8 @@ class TikTokApi:
 
             if 'items' in res.keys():
                 for t in res['items']:
+                    if userObj:
+                        t['authorStats'] = userObj
                     response.append(t)
 
             if not res['hasMore'] and not first:
@@ -153,7 +155,7 @@ class TikTokApi:
 
     def byUsername(self, username, count=30, proxy=None, language='en', region='US'):
         data = self.getUserObject(username, proxy=proxy)
-        return self.userPosts(data['id'], data['secUid'], count=count, proxy=proxy, language=language, region=region)
+        return self.userPosts(data['id'], data['secUid'], count=count, proxy=proxy, language=language, region=region, userObj=data)
 
     #
     # Gets a user's liked posts
