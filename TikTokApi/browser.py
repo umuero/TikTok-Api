@@ -10,6 +10,7 @@ import requests
 # Import Detection From Stealth
 from .stealth import stealth
 
+REFRESH_INTERVAL = 1800 # 30 min
 class browser:
     def __init__(self, url, language='en', proxy=None, find_redirect=False, single_instance=False, api_url=None, debug=False):
         self.url = url
@@ -20,6 +21,7 @@ class browser:
         self.language = language
 
         self.single_instance = single_instance
+        self.last_refresh = 0
         self.browser = None
         self.page = None
 
@@ -94,10 +96,12 @@ class browser:
                 #    'isMobile': random.random() > 0.5,
                 #    'hasTouch': random.random() > 0.5
                 # })
-
+            current_time = int(time.time())
+            if self.last_refresh + REFRESH_INTERVAL < current_time:
                 # might have to switch to a tiktok url if they improve security
                 await self.page.goto("https://www.bing.com/")
 
+                self.last_refresh = current_time
                 self.userAgent = await self.page.evaluate("""() => {return navigator.userAgent; }""")
 
             self.verifyFp = None
