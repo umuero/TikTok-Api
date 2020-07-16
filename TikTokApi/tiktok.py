@@ -537,8 +537,8 @@ class TikTokApi:
     def __format_proxy(self, proxy):
         if proxy != None:
             return {
-                'http': proxy,
-                'https': proxy
+                'http': proxy.replace('socks5', 'socks5h'),
+                'https': proxy.replace('socks5', 'socks5h')
             }
         else:
             return None
