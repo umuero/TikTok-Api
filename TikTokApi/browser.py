@@ -70,9 +70,9 @@ class browser:
         self.language = language
         self.proxy = proxy
         try:
-            asyncio.wait_for(self.start(), 60)
+            self.loop.run_until_complete(asyncio.wait_for(self.start(), 500))
         except asyncio.TimeoutError:
-            print ("browser did not respond in 60 seconds")
+            print ("browser did not respond in 500 seconds")
         # self.loop.run_until_complete(self.start())
         print("browser.call finished")
 
@@ -206,4 +206,4 @@ class browser:
             return None
 
     def __get_js(self, proxy=None):
-        return requests.get("https://sf16-muse-va.ibytedtos.com/obj/rc-web-sdk-gcs/acrawler.js", proxies=self.__format_proxy(proxy)).text
+        return requests.get("https://sf16-muse-va.ibytedtos.com/obj/rc-web-sdk-gcs/acrawler.js", proxies=self.__format_proxy(proxy), timeout=300).text
