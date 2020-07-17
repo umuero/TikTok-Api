@@ -8,6 +8,10 @@ import time
 import json
 from selenium import webdriver
 
+import logging
+
+logger = logging.getLogger("tiktokapi")
+
 
 class TikTokApi:
     #
@@ -17,7 +21,7 @@ class TikTokApi:
         self.debug = debug
         self.timeout = timeout
         if debug:
-            print("Class initialized")
+            logger.debug("Class initialized")
 
         self.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.0 Safari/537.36)"
         self.browser = browser("", language="tr", proxy=proxy, single_instance=True)
@@ -52,9 +56,9 @@ class TikTokApi:
         try:
             return r.json()
         except:
-            print(r.request.headers)
-            print("Converting response to JSON failed response is below (probably empty)")
-            print(r.text)
+            logger.debug(r.request.headers)
+            logger.info("Converting response to JSON failed response is below (probably empty)")
+            logger.debug(r.text)
 
             raise Exception('Invalid Response')
 
@@ -101,7 +105,7 @@ class TikTokApi:
                     response.append(t)
 
             if not res['hasMore'] and not first:
-                print("TikTok isn't sending more TikToks beyond this point.")
+                logger.info("TikTok isn't sending more TikToks beyond this point.")
                 return response
 
             realCount = count-len(response)
@@ -139,7 +143,7 @@ class TikTokApi:
                     response.append(t)
 
             if not res['hasMore'] and not first:
-                print("TikTok isn't sending more TikToks beyond this point.")
+                logger.info("TikTok isn't sending more TikToks beyond this point.")
                 return response
 
             realCount = count-len(response)
@@ -182,7 +186,7 @@ class TikTokApi:
                 res['items']
             except:
                 if self.debug:
-                    print("Most Likely User's List is Empty")
+                    logger.debug("Most Likely User's List is Empty")
                 return []
 
             if 'items' in res.keys():
@@ -190,7 +194,7 @@ class TikTokApi:
                     response.append(t)
 
             if not res['hasMore'] and not first:
-                print("TikTok isn't sending more TikToks beyond this point.")
+                logger.info("TikTok isn't sending more TikToks beyond this point.")
                 return response
 
             realCount = count-len(response)
@@ -235,7 +239,7 @@ class TikTokApi:
                 response.append(t)
 
             if not res['body']['hasMore']:
-                print("TikTok isn't sending more TikToks beyond this point.")
+                logger.info("TikTok isn't sending more TikToks beyond this point.")
                 return response
 
             realCount = count-len(response)
@@ -279,7 +283,7 @@ class TikTokApi:
                 response.append(t)
 
             if not res['body']['hasMore']:
-                print("TikTok isn't sending more TikToks beyond this point.")
+                logger.info("TikTok isn't sending more TikToks beyond this point.")
                 return response
 
             realCount = count-len(response)

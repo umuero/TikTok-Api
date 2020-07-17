@@ -6,9 +6,12 @@ import json
 import string
 import atexit
 import requests
+import logging
 
 # Import Detection From Stealth
 from .stealth import stealth
+
+logger = logging.getLogger("tiktokapi.browser")
 
 REFRESH_INTERVAL = 1800 # 30 min
 class browser:
@@ -65,16 +68,16 @@ class browser:
             self.loop.run_until_complete(self.start())
 
     def call(self, url, language='en', proxy=None):
-        print("browser.call %s" % url)
+        logger.info("browser.call %s" % url)
         self.url = url
         self.language = language
         self.proxy = proxy
         try:
             self.loop.run_until_complete(asyncio.wait_for(self.start(), 500))
         except asyncio.TimeoutError:
-            print ("browser did not respond in 500 seconds")
+            logger.info("browser did not respond in 500 seconds")
         # self.loop.run_until_complete(self.start())
-        print("browser.call finished")
+        logger.info("browser.call finished")
 
     async def start(self):
         try:
@@ -104,7 +107,7 @@ class browser:
                 # })
             current_time = int(time.time())
             if self.last_refresh + REFRESH_INTERVAL < current_time:
-                print("refreshing page")
+                logger.info("refreshing page")
                 # might have to switch to a tiktok url if they improve security
                 await self.page.goto("https://www.bing.com/")
 
@@ -122,7 +125,7 @@ class browser:
 
             if self.verifyFp is None:
                 if self.debug:
-                    print("No verifyFp cookie.")
+                    logger.debug("No verifyFp cookie.")
         
                 key = ''
                 for i in range(16):
@@ -145,7 +148,7 @@ class browser:
                                     })
 
                 self.data = await self.page.content()
-                print(self.data)
+                logger.info(self.data)
                 #self.data = await json.loads(self.data)
 
             if self.single_instance is False:
