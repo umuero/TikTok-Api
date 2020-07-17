@@ -69,7 +69,11 @@ class browser:
         self.url = url
         self.language = language
         self.proxy = proxy
-        self.loop.run_until_complete(self.start())
+        try:
+            asyncio.wait_for(self.start(), 60)
+        except asyncio.TimeoutError:
+            print ("browser did not respond in 60 seconds")
+        # self.loop.run_until_complete(self.start())
         print("browser.call finished")
 
     async def start(self):
@@ -100,6 +104,7 @@ class browser:
                 # })
             current_time = int(time.time())
             if self.last_refresh + REFRESH_INTERVAL < current_time:
+                print("refreshing page")
                 # might have to switch to a tiktok url if they improve security
                 await self.page.goto("https://www.bing.com/")
 
@@ -144,9 +149,11 @@ class browser:
                 #self.data = await json.loads(self.data)
 
             if self.single_instance is False:
+                await self.page.close()
                 await self.browser.close()
         except:
             if self.single_instance is False:
+                await self.page.close()
                 await self.browser.close()
 
     async def find_redirect(self):
