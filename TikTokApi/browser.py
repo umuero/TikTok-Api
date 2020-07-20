@@ -76,7 +76,12 @@ class browser:
             self.loop.run_until_complete(asyncio.wait_for(self.start(), 500))
         except asyncio.TimeoutError:
             logger.info("browser did not respond in 500 seconds")
-        # self.loop.run_until_complete(self.start())
+            try:
+                self.loop.run_until_complete(asyncio.wait_for(self.stop(), 300))
+            except Exception:
+                logger.info("browser close failed")
+                self.page = None
+                self.browser = None
         logger.info("browser.call finished")
 
     async def start(self):
@@ -108,10 +113,10 @@ class browser:
             current_time = int(time.time())
             if self.last_refresh + REFRESH_INTERVAL < current_time:
                 logger.info("refreshing page")
+                self.last_refresh = current_time
                 # might have to switch to a tiktok url if they improve security
                 await self.page.goto("https://www.bing.com/")
 
-                self.last_refresh = current_time
                 self.userAgent = await self.page.evaluate("""() => {return navigator.userAgent; }""")
 
             self.verifyFp = None
@@ -152,12 +157,24 @@ class browser:
                 #self.data = await json.loads(self.data)
 
             if self.single_instance is False:
-                await self.page.close()
-                await self.browser.close()
+                await self.stop()
         except:
             if self.single_instance is False:
-                await self.page.close()
-                await self.browser.close()
+                await self.stop()
+
+
+    async def stop(self):
+        try:
+            await self.page.close()
+        except Exception:
+            logger.exception("page close failed")
+        try:
+            await self.browser.close()
+        except Exception:
+            logger.exception("browser close failed")
+        self.page = None
+        self.browser = None
+
 
     async def find_redirect(self):
         try:

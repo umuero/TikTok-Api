@@ -58,7 +58,7 @@ class TikTokApi:
         except:
             logger.debug(r.request.headers)
             logger.info("Converting response to JSON failed response is below (probably empty)")
-            logger.debug(r.text)
+            logger.info(r.text)
 
             raise Exception('Invalid Response')
 
