@@ -36,7 +36,7 @@ class browser:
             "--window-position=0,0",
             "--ignore-certifcate-errors",
             "--ignore-certifcate-errors-spki-list",
-             "--user-agent=" + self.userAgent,
+             "--user-agent=" + self.userAgent
         ]
 
         #self.args = []
@@ -104,38 +104,19 @@ class browser:
 
                 await stealth(self.page)
 
-                # await self.page.emulate({
-                #    'viewport': {'width': random.randint(320, 1920), 'height': random.randint(320, 1920), },
-                #    'deviceScaleFactor': random.randint(1, 3),
-                #    'isMobile': random.random() > 0.5,
-                #    'hasTouch': random.random() > 0.5
-                # })
             current_time = int(time.time())
             if self.last_refresh + REFRESH_INTERVAL < current_time:
                 logger.info("refreshing page")
                 self.last_refresh = current_time
                 # might have to switch to a tiktok url if they improve security
-                await self.page.goto("https://www.bing.com/")
+                # await self.page.goto("https://www.bing.com/")
+                await self.page.goto("about:blank", {
+                    'waitUntil': "load"
+                })
 
                 self.userAgent = await self.page.evaluate("""() => {return navigator.userAgent; }""")
 
-            self.verifyFp = None
-
-            #
-            # Probably need to unmark this at a later point
-            #
-            #for c in await self.page.cookies():
-            #    if c['name'] == "s_v_web_id":
-            #        self.verifyFp = c['value']
-
-            if self.verifyFp is None:
-                if self.debug:
-                    logger.debug("No verifyFp cookie.")
-        
-                key = ''
-                for i in range(16):
-                    key += random.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits)
-                self.verifyFp = key
+            self.verifyFp = ''.join(random.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for i in range(16))
 
             await self.page.evaluate("() => { " + self.__get_js(proxy=self.proxy) + " }")
             
