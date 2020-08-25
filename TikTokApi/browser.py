@@ -93,6 +93,8 @@ class browser:
     def call(self, url, language='en', proxy=None):
         logger.info("browser.call %s" % url)
         self.url = url
+        if self.url.endswith("&verifyFp="):
+            self.url = self.url[:-10]
         self.language = language
         self.proxy = proxy
         try:
@@ -128,8 +130,12 @@ class browser:
 
         await self.browser.close()
         self.browser.process.communicate()
+        self.browser = None
 
         return 0
+
+    def randomWord(self, count):
+        return ''.join(random.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for i in range(count))
 
     async def start(self):
         try:
@@ -163,7 +169,7 @@ class browser:
 
                 self.userAgent = await self.page.evaluate("""() => {return navigator.userAgent; }""")
 
-            self.verifyFp = ''.join(random.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for i in range(16))
+            self.verifyFp = '_'.join(['verify_', self.randomWord(8), self.randomWord(8), self.randomWord(4), self.randomWord(4), self.randomWord(4), self.randomWord(12)])
 
             await self.page.evaluate("() => { " + get_acrawler() + " }")
             
