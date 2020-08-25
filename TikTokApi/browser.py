@@ -2,20 +2,26 @@ import asyncio
 import pyppeteer
 import random
 import time
-import json
 import string
-import atexit
 import requests
 import logging
+from threading import Thread
 
 # Import Detection From Stealth
 from .stealth import stealth
+
+from .get_acrawler import get_acrawler
+
+async_support = False
+def set_async():
+    global async_support
+    async_support = True
 
 logger = logging.getLogger("tiktokapi.browser")
 
 REFRESH_INTERVAL = 1800 # 30 min
 class browser:
-    def __init__(self, url, language='en', proxy=None, find_redirect=False, single_instance=False, api_url=None, debug=False):
+    def __init__(self, url, language='en', proxy=None, find_redirect=False, single_instance=False, api_url=None, debug=False, newParams=False):
         self.url = url
         self.debug = debug
         self.proxy = proxy
@@ -28,7 +34,7 @@ class browser:
         self.browser = None
         self.page = None
 
-        self.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.0 Safari/537.36)"
+        self.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36"
         self.args = [
             "--no-sandbox",
             "--disable-setuid-sandbox",
@@ -36,11 +42,8 @@ class browser:
             "--window-position=0,0",
             "--ignore-certifcate-errors",
             "--ignore-certifcate-errors-spki-list",
-             "--user-agent=" + self.userAgent
+            "--user-agent=" + self.userAgent
         ]
-
-        #self.args = []
-        # "--user-agent=" + self.userAgent,
 
         if proxy != None:
             if "@" in proxy:
@@ -59,13 +62,33 @@ class browser:
             'handleSIGTERM': False,
             'handleSIGHUP': False
         }
-
-        self.loop = asyncio.new_event_loop()
-
-        if find_redirect:
-            self.loop.run_until_complete(self.find_redirect())
+        
+        if async_support:
+            loop = asyncio.new_event_loop()
+            t = Thread(target=self.__start_background_loop, args=(loop, ), daemon=True)
+            t.start()
+            if find_redirect:
+                fut = asyncio.run_coroutine_threadsafe(self.find_redirect(), loop)
+            elif newParams:
+                fut = asyncio.run_coroutine_threadsafe(self.newParams(), loop)
+            else:
+                fut = asyncio.run_coroutine_threadsafe(self.start(), loop)
+            fut.result()
         else:
-            self.loop.run_until_complete(self.start())
+            try:
+                self.loop = asyncio.new_event_loop()
+                if find_redirect:
+                    self.loop.run_until_complete(self.find_redirect())
+                elif newParams:
+                    self.loop.run_until_complete(self.newParams())
+                else:
+                    self.loop.run_until_complete(self.start())
+            except:
+                self.loop.close()
+
+    def __start_background_loop(self, loop):
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
 
     def call(self, url, language='en', proxy=None):
         logger.info("browser.call %s" % url)
@@ -83,6 +106,30 @@ class browser:
                 self.page = None
                 self.browser = None
         logger.info("browser.call finished")
+
+    async def newParams(self) -> None:
+        self.browser = await pyppeteer.launch(self.options)
+        self.page = await self.browser.newPage()
+        await self.page.goto("about:blank")
+
+        #self.browser_language = await self.page.evaluate("""() => { return navigator.language || navigator.userLanguage; }""")
+        self.browser_language = ""
+        #self.timezone_name = await self.page.evaluate("""() => { return Intl.DateTimeFormat().resolvedOptions().timeZone; }""")
+        self.timezone_name = ""
+        #self.browser_platform = await self.page.evaluate("""() => { return window.navigator.platform; }""")
+        self.browser_platform = ""
+        #self.browser_name = await self.page.evaluate("""() => { return window.navigator.appCodeName; }""")
+        self.browser_name = ""
+        #self.browser_version = await self.page.evaluate("""() => { return window.navigator.appVersion; }""")
+        self.browser_version = ""
+
+        self.width = await self.page.evaluate("""() => { return screen.width; }""")
+        self.height = await self.page.evaluate("""() => { return screen.height; }""")
+
+        await self.browser.close()
+        self.browser.process.communicate()
+
+        return 0
 
     async def start(self):
         try:
@@ -118,7 +165,7 @@ class browser:
 
             self.verifyFp = ''.join(random.choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for i in range(16))
 
-            await self.page.evaluate("() => { " + self.__get_js(proxy=self.proxy) + " }")
+            await self.page.evaluate("() => { " + get_acrawler() + " }")
             
             self.signature = await self.page.evaluate('''() => {
             var url = "''' + self.url + "&verifyFp=" + self.verifyFp + '''"
@@ -151,6 +198,7 @@ class browser:
             logger.exception("page close failed")
         try:
             await self.browser.close()
+            self.browser.process.communicate()
         except Exception:
             logger.exception("browser close failed")
         self.page = None
@@ -193,9 +241,11 @@ class browser:
             self.redirect_url = self.page.url
 
             await self.browser.close()
+            self.browser.process.communicate()
 
         except:
             await self.browser.close()
+            self.browser.process.communicate()
 
     def __format_proxy(self, proxy):
         if proxy != None:
